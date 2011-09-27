@@ -18,8 +18,10 @@ var server = net.createServer(function (socket) {
 
 // The server should listen to any incomming messages and process these.
 server.listen(port, host,function(e){
+	console.log('Server wants to listen to ' + host + ':' + port + '.');
+	var home = server.address();
+	console.log('Server is actually listening to ' + home.host + ':' + home.port + '.');
 	console.log('Ready to receive incomming messages.');
-	console.log('Server listening at ' + host + ':' + port);
 });
 
 
