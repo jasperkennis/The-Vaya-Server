@@ -3,7 +3,7 @@
  */
 
 var net = require('net');
-var host = process.env.CLIENT_ID || "0.0.0.0";
+var host = process.env.CLIENT_IP || "0.0.0.0";
 var port = process.env.PORT || 1337; // Use Heroku process port or leet.
 var maintSocket = null; // Will be set on server creation.
 
