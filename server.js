@@ -3,9 +3,8 @@
  */
 
 var net = require('net');
-var host = process.env.CLIENT_IP || "0.0.0.0";
-var port = process.env.PORT || 1337; // Use Heroku process port or leet.
-var maintSocket = null; // Will be set on server creation.
+var host = process.env.CLIENT_IP || "0.0.0.0"; // Use client host or local.
+var port = process.env.PORT || 1337; // Use client port or leet.
 
 // The callback function is executed whenever someone connects.
 var server = net.createServer(function (socket) {
@@ -15,9 +14,6 @@ var server = net.createServer(function (socket) {
   	console.log(data);
   	socket.write("Tnx for telling me that.");
   });
-  socket.write("Talking to self.");
-  socket.write("Personal hoby of mine.");
-  socket.write("Who's sane and who's not?.");
 });
 
 // The server should listen to any incomming messages and process these.
