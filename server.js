@@ -15,6 +15,9 @@ var server = net.createServer(function (socket) {
   	console.log(data);
   	socket.write("Tnx for telling me that.");
   });
+  socket.write("Talking to self.");
+  socket.write("Personal hoby of mine.");
+  socket.write("Who's sane and who's not?.");
 });
 
 // The server should listen to any incomming messages and process these.
