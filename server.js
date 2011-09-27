@@ -4,16 +4,16 @@
 
 var net = require('net');
 var host = "localhost";
-var port = 1337;
+var port = process.env.PORT || 3000;
 var maintSocket = null; // Will be set on server creation.
 
 // The callback function is executed whenever someone connects.
 var server = net.createServer(function (socket) {
   socket.write("Welcome to the server.");
-  //socket.pipe(socket);
   socket.setEncoding('ascii'); // Old, but the fastest.
   socket.on("data", function(data){
   	console.log(data);
+  	socket.write("Tnx for telling me that.");
   });
 });
 
