@@ -3,7 +3,7 @@
  */
 
 var net = require('net');
-var host = "localhost";
+var host = "0.0.0.0";
 var port = process.env.PORT || 1337;
 var maintSocket = null; // Will be set on server creation.
 
