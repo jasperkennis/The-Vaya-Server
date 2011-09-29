@@ -15,28 +15,28 @@ function Game(){
 	return this;
 }
 
+Game.prototype.tellPlayers = function(message){
+	for (var i = this.players.length - 1; i >= 0; i--){
+		this.players[i].write(message);
+	};
+}
+
+Game.prototype.addPlayer = function(player){
+	if( !self ){ var self = this; }
+	this.players.push(player);
+	if( this.players.length < this.room_size ){
+		player.write("You're now in a game!\r\n");
+		this.tellPlayers("Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
+		return false;
+	} else {
+		this.tellPlayers("Ready to start the game!\r\n");
+		return true;
+	}
+};
 
 Game.prototype.init = function(player,room_size){
 	this.players = [];
 	this.room_size = room_size;
-	
-	
-	
-	// Add player returns true if the room is full:
-	this.addPlayer = function(player){
-		if( !self ){ var self = this; }
-		this.players.push(player);
-		if( this.players.length < this.room_size ){
-			player.write("You're now in a game! Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
-			return false;
-		} else {
-			player.write("Ready to start the game!\r\n");
-			return true;
-		}
-		
-	};
-	
-	
 	
 	// On initialization, a user should fill the first spot in the room.
 	this.addPlayer(player);
@@ -50,7 +50,7 @@ Game.prototype.init = function(player,room_size){
 var GameManager = {
 	defaultNumberOfPlayers: 4,
 	defaultGameTime: 120,
-	games: [],
+	runningGames: [],
 	openGames:[],
 	players: [],
 	
@@ -73,7 +73,7 @@ var GameManager = {
 		} else {
 			socket.write("Games exist. We're going to find you a free slot!\r\n");
 			if(this.openGames[0].addPlayer(socket)){
-				this.openGames.shift();
+				this.runningGames.push(this.openGames.shift());
 			}
 		}
 	}
