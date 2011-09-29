@@ -9,30 +9,27 @@ var port = process.env.PORT || 1337; // Use client port or leet.
 
 
 /**
+ * Player class. Instances represent a player and its socket.
+ */
+function Player(){
+	return this;
+}
+
+Player.prototype.init = function(socket){
+	this.socket = socket;
+	var my_id = Math.floor(Math.random()*9999999999);
+	this.id = my_id;
+	this.room_index = 0;
+}
+
+
+
+/**
  * Game class. Instances of Game represent a single game session
  */
 function Game(){
 	return this;
 }
-
-Game.prototype.tellPlayers = function(message){
-	for (var i = this.players.length - 1; i >= 0; i--){
-		this.players[i].write(message);
-	};
-}
-
-Game.prototype.addPlayer = function(player){
-	if( !self ){ var self = this; }
-	this.players.push(player);
-	if( this.players.length < this.room_size ){
-		player.write("You're now in a game!\r\n");
-		this.tellPlayers("Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
-		return false;
-	} else {
-		this.tellPlayers("Ready to start the game!\r\n");
-		return true;
-	}
-};
 
 Game.prototype.init = function(player,room_size){
 	this.players = [];
@@ -40,6 +37,39 @@ Game.prototype.init = function(player,room_size){
 	
 	// On initialization, a user should fill the first spot in the room.
 	this.addPlayer(player);
+};
+
+Game.prototype.tellPlayers = function(message,exclude){
+	if(!exclude){ exclude = false; }
+	for (var i = this.players.length - 1; i >= 0; i--){
+		if(!exclude || exclude != this.players[i].id){
+			this.players[i].socket.write(message);
+		}
+	};
+}
+
+Game.prototype.tellPlayersAboutGameIndex = function(index){
+	for (var i = this.players.length - 1; i >= 0; i--){
+		this.players[i].room_index = index;
+		this.players[i].socket.write("You've been moved into game " + index + ".\r\n");
+		GameManager.fastPlayerIndex[this.players[i].socket.fd] = index;
+	};
+}
+
+Game.prototype.addPlayer = function(player){
+	if( !self ){ var self = this; }
+	
+	this.players.push(player);
+	
+	player.socket.write("You're now in a game! Your id is " + player.id + "\r\n");
+	
+	if( this.players.length < this.room_size ){
+		this.tellPlayers("Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
+		return false;
+	} else {
+		this.tellPlayers("Ready to start the game!\r\n");
+		return true;
+	}
 };
 
 
@@ -53,27 +83,43 @@ var GameManager = {
 	runningGames: [],
 	openGames:[],
 	players: [],
+	fastPlayerIndex: [],
 	
-	handleMessage: function(message){
+	handleMessage: function(message,socket){
+		if(this.runningGames[this.fastPlayerIndex[socket.fd]]){
+			this.runningGames[this.fastPlayerIndex[socket.fd]].tellPlayers(message,this.fastPlayerIndex[socket.fd].id);
+		} else {
+			socket.write("You're broadcasting, but this game hasn't started yet!\n\r");
+		}
 	},
 	
 	createGame: function(player){
-		var new_game = new Game();
-		new_game.init(player, this.defaultNumberOfPlayers);
-		this.openGames.push(new_game);
+		var _new_game = new Game();
+		_new_game.init(player, this.defaultNumberOfPlayers);
+		this.openGames.push(_new_game);
 	},
 	
 	addPlayer: function(socket){
 		if(!self){ var self = this; }
-		this.players.push(socket);
+		var _new_player = new Player();
+		_new_player.init(socket);
+		this.players.push(_new_player);
 		
 		if(this.openGames.length < 1){
 			socket.write("Since there was no game available yet, we're creating a new one for you now!\r\n");
-			self.createGame(socket);
+			self.createGame(_new_player);
 		} else {
 			socket.write("Games exist. We're going to find you a free slot!\r\n");
-			if(this.openGames[0].addPlayer(socket)){
-				this.runningGames.push(this.openGames.shift());
+			if(this.openGames[0].addPlayer(_new_player)){
+				/*
+				 * This game session starts now. We add the game to the
+				 * running game array at a random index, and tell all
+				 * players which index that is, for faster navigation
+				 * and messaging between players and games later on.
+				 */
+				var our_index = Math.floor(Math.random()*9999999999);
+				this.openGames[0].tellPlayersAboutGameIndex(our_index);
+				this.runningGames[our_index] = this.openGames.shift();
 			}
 		}
 	}
@@ -86,8 +132,7 @@ var server = net.createServer(function (socket) {
   socket.write("Welcome player!\r\n");
   socket.setEncoding('ascii'); // Old, but the fastest.
   socket.on("data", function(data){
-  	console.log(data);
-  	socket.write("Tnx for telling me that.\r\n");
+  	GameManager.handleMessage(data,socket);
   });
   GameManager.addPlayer(socket);
 });
@@ -97,7 +142,7 @@ server.listen(port, host,function(e){
 	console.log('Server wants to listen to ' + host + ':' + port + '.');
 	var home = server.address();
 	if( host == home.address && port == home.port ){
-		console.log('And it actually is!.');
+		console.log('And it actually is!');
 	} else {
 		console.log('Server is actually listening to ' + home.address + ':' + home.port + '.');
 	}
