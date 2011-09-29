@@ -21,13 +21,22 @@ Game.prototype.init = function(player,room_size){
 	this.room_size = room_size;
 	
 	
-	/*
-	 * Add player returns true if the room is full:
-	 */
+	
+	// Add player returns true if the room is full:
 	this.addPlayer = function(player){
+		if( !self ){ var self = this; }
 		this.players.push(player);
-		player.write("Your game has been created. Now we have to wait for " + ( this.room_size - this.players.length - 1 ) + " more players...\r\n");
+		if( this.players.length < this.room_size ){
+			player.write("You're now in a game! Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
+			return false;
+		} else {
+			player.write("Ready to start the game!\r\n");
+			return true;
+		}
+		
 	};
+	
+	
 	
 	// On initialization, a user should fill the first spot in the room.
 	this.addPlayer(player);
@@ -50,20 +59,27 @@ var GameManager = {
 	
 	createGame: function(player){
 		var new_game = new Game();
-		new_game.init(player);
-		this.games.push(new_game);
+		new_game.init(player, this.defaultNumberOfPlayers);
+		this.openGames.push(new_game);
 	},
 	
 	addPlayer: function(socket){
 		if(!self){ var self = this; }
 		this.players.push(socket);
 		
-		if(this.games.length < 1){
+		if(this.openGames.length < 1){
 			socket.write("Since there was no game available yet, we're creating a new one for you now!\r\n");
 			self.createGame(socket);
-		} else {}
+		} else {
+			socket.write("Games exist. We're going to find you a free slot!\r\n");
+			if(this.openGames[0].addPlayer(socket)){
+				this.openGames.shift();
+			}
+		}
 	}
 }
+
+
 
 // The callback function is executed whenever someone connects.
 var server = net.createServer(function (socket) {
