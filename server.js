@@ -8,11 +8,11 @@ var port = process.env.PORT || 1337; // Use client port or leet.
 
 // The callback function is executed whenever someone connects.
 var server = net.createServer(function (socket) {
-  socket.write("Welcome to the server.");
+  socket.write("Welcome to the server.\r\n");
   socket.setEncoding('ascii'); // Old, but the fastest.
   socket.on("data", function(data){
   	console.log(data);
-  	socket.write("Tnx for telling me that.");
+  	socket.write("Tnx for telling me that.\r\n");
   });
 });
 
