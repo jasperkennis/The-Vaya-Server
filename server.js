@@ -17,14 +17,13 @@ function Player(){
 
 Player.prototype.init = function(socket){
 	this.socket = socket;
-	var my_id = Math.floor(Math.random()*9999999999);
-	this.id = my_id;
+	this.id = socket.remoteAddress + socket.remotePort;
 	this.room_index = 0;
 }
 
 
 
-/**
+/*
  * Game class. Instances of Game represent a single game session
  */
 function Game(){
@@ -48,11 +47,15 @@ Game.prototype.tellPlayers = function(message,exclude){
 	};
 }
 
+/*
+ * Tells each story which game their in, and creates a player.id => game.id 
+ * reference in fastPlayerIndex.
+ */
 Game.prototype.tellPlayersAboutGameIndex = function(index){
 	for (var i = this.players.length - 1; i >= 0; i--){
 		this.players[i].room_index = index;
 		this.players[i].socket.write("You've been moved into game " + index + ".\r\n");
-		GameManager.fastPlayerIndex[this.players[i].socket.fd] = index;
+		GameManager.fastPlayerIndex[this.players[i].socket.remoteAddress + this.players[i].socket.remotePort] = index;
 	};
 }
 
@@ -74,7 +77,7 @@ Game.prototype.addPlayer = function(player){
 
 
 
-/**
+/*
  * Singleton GameManager, manages new players and handles incomming messages.
  */
 var GameManager = {
@@ -83,11 +86,11 @@ var GameManager = {
 	runningGames: [],
 	openGames:[],
 	players: [],
-	fastPlayerIndex: [],
+	fastPlayerIndex: [], // player.id => game.id
 	
 	handleMessage: function(message,socket){
-		if(this.runningGames[this.fastPlayerIndex[socket.fd]]){
-			this.runningGames[this.fastPlayerIndex[socket.fd]].tellPlayers(message,this.fastPlayerIndex[socket.fd].id);
+		if(this.runningGames[this.fastPlayerIndex[socket.remoteAddress + socket.remotePort]]){
+			this.runningGames[this.fastPlayerIndex[socket.remoteAddress + socket.remotePort]].tellPlayers(message , socket.remoteAddress + socket.remotePort);
 		} else {
 			socket.write("You're broadcasting, but this game hasn't started yet!\n\r");
 		}
