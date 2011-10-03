@@ -125,6 +125,31 @@ var GameManager = {
 				this.runningGames[our_index] = this.openGames.shift();
 			}
 		}
+	},
+	
+	discartPlayer: function(socket){
+		if(!self){ var self = this; }
+		var target = null;
+		
+		for (var i = this.players.length - 1; i >= 0; i--){
+			if(self.players[i].id == socket.remoteAddress + socket.remotePort){
+				target = self.players[i];
+			} 
+		};
+		
+		if(this.fastPlayerIndex[target.id]){
+			
+			var index = self.runningGames[thistory.fastPlayerIndex[target.id]].players.indexOf(target); 
+			self.runningGames[thistory.fastPlayerIndex[target.id]].players.splice(index,1);
+			self.runningGames[thistory.fastPlayerIndex[target.id]].tellPlayers("A player left.");
+			
+		} else {
+			
+			var index = self.openGames[0].players.indexOf(target);
+			self.openGames[0].players.splice(index,1);
+			self.openGames[0].tellPlayers("One player left. Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
+			
+		}
 	}
 }
 
@@ -134,6 +159,9 @@ var GameManager = {
 var server = net.createServer(function (socket) {
   socket.write("Welcome player!\r\n");
   socket.setEncoding('ascii'); // Old, but the fastest.
+  socket.on("close", function(){
+  	GameManager.discartPlayer(socket);
+  });
   socket.on("data", function(data){
   	GameManager.handleMessage(data,socket);
   });
