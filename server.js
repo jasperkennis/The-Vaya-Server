@@ -19,6 +19,9 @@ Player.prototype.init = function(socket){
 	this.socket = socket;
 	this.id = socket.remoteAddress + socket.remotePort;
 	this.room_index = 0;
+	this.x = null; // Float
+	this.y = null; // Float
+	this.orientation = null; // Float
 }
 
 
@@ -31,12 +34,33 @@ function Game(){
 }
 
 Game.prototype.init = function(player,room_size){
+	if(!self){ var self = this; }
 	this.players = [];
 	this.room_size = room_size;
+	this.running = false;
 	
 	// On initialization, a user should fill the first spot in the room.
 	this.addPlayer(player);
+	this.positions = Array();
+	setInterval(function(){self.sendPositions();},33);
 };
+
+Game.prototype.sendPositions = function(){
+	if(this.running){
+		position_json_string = '{"type":"positions","players":["';
+		for (var i = this.players.length - 1; i >= 0; i--){
+			position_json_string += '{';
+			position_json_string += '"id":"' + this.players[i].id + '",';
+			position_json_string += '"x":"' + this.players[i].x + '",';
+			position_json_string += '"y":"' + this.players[i].y + '",';
+			position_json_string += '"orientation":"' + this.players[i].orientation + '"';
+			position_json_string += '},';
+		};
+		position_json_string += ']}';
+		console.log(position_json_string);
+		//this.tellPlayers(this.positions);
+	}
+}
 
 Game.prototype.tellPlayers = function(message,exclude){
 	if(!exclude){ exclude = false; }
@@ -59,6 +83,27 @@ Game.prototype.tellPlayersAboutGameIndex = function(index){
 	};
 }
 
+Game.prototype.handleMessage = function(message,from){
+	console.log("Incomming message.");
+	var message_object = JSON.parse(message);
+	switch(message_object.type){
+		case "position_update": // {"type":"position_update","position":"hello"}
+			console.log("It's a position.");
+			this.handlePositionUpdates(message_object.position,from);
+			break;
+		default:
+			console.log("Unknown type!");
+			break;
+	}
+}
+
+Game.prototype.handlePositionUpdates = function(position,from){
+	this.positions[from] = position;
+	this.positions.push(position);
+	console.log(this.positions.length);
+	console.log(this.positions);
+}
+
 Game.prototype.addPlayer = function(player){
 	if( !self ){ var self = this; }
 	
@@ -71,6 +116,7 @@ Game.prototype.addPlayer = function(player){
 		return false;
 	} else {
 		this.tellPlayers("Ready to start the game!\r\n");
+		this.tellPlayers("\r\n");
 		return true;
 	}
 };
@@ -90,7 +136,7 @@ var GameManager = {
 	
 	handleMessage: function(message,socket){
 		if(this.runningGames[this.fastPlayerIndex[socket.remoteAddress + socket.remotePort]]){
-			this.runningGames[this.fastPlayerIndex[socket.remoteAddress + socket.remotePort]].tellPlayers(message , socket.remoteAddress + socket.remotePort);
+			this.runningGames[this.fastPlayerIndex[socket.remoteAddress + socket.remotePort]].handleMessage(message , socket.remoteAddress + socket.remotePort);
 		} else {
 			socket.write("You're broadcasting, but this game hasn't started yet!\n\r");
 		}
@@ -123,6 +169,7 @@ var GameManager = {
 				var our_index = Math.floor(Math.random()*9999999999);
 				this.openGames[0].tellPlayersAboutGameIndex(our_index);
 				this.runningGames[our_index] = this.openGames.shift();
+				this.runningGames[our_index].running = true;
 			}
 		}
 	},
