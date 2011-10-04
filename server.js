@@ -41,7 +41,7 @@ Game.prototype.init = function(player,room_size){
 	
 	// On initialization, a user should fill the first spot in the room.
 	this.addPlayer(player);
-	this.positions;
+	this.positions = Object();
 	this.positions.size = 0;
 	setInterval(function(){self.sendPositions();},33);
 };
@@ -58,7 +58,7 @@ Game.prototype.sendPositions = function(){
 			position_json_string += '},';
 		};
 		position_json_string += ']}';
-		//console.log(position_json_string);
+		console.log(position_json_string);
 		//this.tellPlayers(this.positions);
 	}
 }
@@ -86,7 +86,9 @@ Game.prototype.tellPlayersAboutGameIndex = function(index){
 
 Game.prototype.handleMessage = function(message,from){
 	console.log("Incomming message.");
-	console.log(message);
+	messages = message.split("\n");
+	last = messages.length;
+	message = messages[last - 2];
 	var message_object = JSON.parse(message);
 	switch(message_object.type){
 		case "position_update": // {"type":"position_update","position":"hello"}
@@ -106,8 +108,6 @@ Game.prototype.handlePositionUpdates = function(position,from){
 		this.positions.size++;
 		this.positions[from] = position;
 	}
-	console.log(this.positions.length);
-	console.log(this.positions);
 }
 
 Game.prototype.addPlayer = function(player){
