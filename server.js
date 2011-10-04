@@ -42,29 +42,23 @@ Game.prototype.init = function(player,room_size){
 	// On initialization, a user should fill the first spot in the room.
 	this.addPlayer(player);
 	this.positions = Object();
-	this.positions.size = 0;
 	setInterval(function(){self.sendPositions();},33);
 };
 
 Game.prototype.sendPositions = function(){
 	if(this.running){
-		position_json_string = '{"type":"positions","players":["';
-		for (var i = this.players.length - 1; i >= 0; i--){
-			position_json_string += '{';
-			position_json_string += '"id":"' + this.players[i].id + '",';
-			position_json_string += '"x":"' + this.players[i].x + '",';
-			position_json_string += '"y":"' + this.players[i].y + '",';
-			position_json_string += '"orientation":"' + this.players[i].orientation + '"';
-			position_json_string += '},';
-		};
-		position_json_string += ']}';
-		console.log(position_json_string);
-		//this.tellPlayers(this.positions);
+		console.log(JSON.stringify(this.positions));
+		this.tellPlayers(this.positions);
 	}
 }
 
 Game.prototype.tellPlayers = function(message,exclude){
 	if(!exclude){ exclude = false; }
+	
+	if(typeof message !== 'string'){
+		message = JSON.stringify(message);
+	} 
+
 	for (var i = this.players.length - 1; i >= 0; i--){
 		if(!exclude || exclude != this.players[i].id){
 			this.players[i].socket.write(message);
@@ -105,7 +99,6 @@ Game.prototype.handlePositionUpdates = function(position,from){
 	if(this.positions[from]) {
 		this.positions[from] = position;
 	} else {
-		this.positions.size++;
 		this.positions[from] = position;
 	}
 }
