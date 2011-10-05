@@ -39,7 +39,6 @@ Game.prototype.init = function(player,room_size){
 	this.room_size = room_size;
 	this.running = false;
 	
-	// On initialization, a user should fill the first spot in the room.
 	this.addPlayer(player);
 	this.positions = Object();
 	setInterval(function(){self.sendPositions();},33);
@@ -87,6 +86,12 @@ Game.prototype.handleMessage = function(message,from){
 	switch(message_object.type){
 		case "position_update": // {"type":"position_update","position":{"x":100,"y":100,"angle":180}}
 			this.handlePositionUpdates(message_object.position,from);
+			break;
+		case "player_got_obj":
+			this.tellPlayers(message_object,from);
+			break;
+		case "player_dropped_obj":
+			this.tellPlayers(message_object,from);
 			break;
 		default:
 			console.log("Unknown type!");
