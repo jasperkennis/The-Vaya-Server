@@ -56,7 +56,7 @@ Game.prototype.tellPlayers = function(message,exclude){
 	if(!exclude){ exclude = false; }
 	
 	if(typeof message !== 'string'){
-		message = JSON.stringify(message);
+		message = JSON.stringify(message) + "\r\n";
 	} 
 
 	for (var i = this.players.length - 1; i >= 0; i--){
@@ -73,20 +73,19 @@ Game.prototype.tellPlayers = function(message,exclude){
 Game.prototype.tellPlayersAboutGameIndex = function(index){
 	for (var i = this.players.length - 1; i >= 0; i--){
 		this.players[i].room_index = index;
-		this.players[i].socket.write("You've been moved into game " + index + ".\r\n");
+		this.players[i].socket.write('{"type":"message","message":"Het spel gegint, je zit in spel ' + index + '."}\r\n');
 		GameManager.fastPlayerIndex[this.players[i].socket.remoteAddress + this.players[i].socket.remotePort] = index;
 	};
 }
 
 Game.prototype.handleMessage = function(message,from){
-	console.log("Incomming message.");
+	//console.log("Incomming message.");
 	messages = message.split("\n");
 	last = messages.length;
 	message = messages[last - 2];
 	var message_object = JSON.parse(message);
 	switch(message_object.type){
-		case "position_update": // {"type":"position_update","position":"hello"}
-			console.log("It's a position.");
+		case "position_update": // {"type":"position_update","position":{"x":100,"y":100,"angle":180}}
 			this.handlePositionUpdates(message_object.position,from);
 			break;
 		default:
@@ -108,13 +107,14 @@ Game.prototype.addPlayer = function(player){
 	
 	this.players.push(player);
 	
-	player.socket.write("You're now in a game! Your id is " + player.id + "\r\n");
+	player.socket.write('{"type":"player_id","id":"' + player.id + '"}\r\n');
 	
 	if( this.players.length < this.room_size ){
-		this.tellPlayers("Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
+		this.tellPlayers('{"type":"message","message":"We wachten nog op ' + ( this.room_size - this.players.length ) + ' spelers..."}\r\n');
 		return false;
 	} else {
-		this.tellPlayers("Ready to start the game!\r\n");
+		//this.tellPlayers("Ready to start the game!\r\n");
+		this.tellPlayers('{"type":"directive","directive":"start"}\r\n'); // Fires START on clients. 
 		this.tellPlayers("\r\n");
 		return true;
 	}
@@ -137,7 +137,7 @@ var GameManager = {
 		if(this.runningGames[this.fastPlayerIndex[socket.remoteAddress + socket.remotePort]]){
 			this.runningGames[this.fastPlayerIndex[socket.remoteAddress + socket.remotePort]].handleMessage(message , socket.remoteAddress + socket.remotePort);
 		} else {
-			socket.write("You're broadcasting, but this game hasn't started yet!\n\r");
+			socket.write('{"type":"message","message":"Je praat tegen een gesloten spel, dat gaat niet!"}\r\n');
 		}
 	},
 	
@@ -154,10 +154,10 @@ var GameManager = {
 		this.players.push(_new_player);
 		
 		if(this.openGames.length < 1){
-			socket.write("Since there was no game available yet, we're creating a new one for you now!\r\n");
+			socket.write('{"type":"message","message":"Er is nog geen spel begonnen, we starten een nieuw spel voor je."}\r\n');
 			self.createGame(_new_player);
 		} else {
-			socket.write("Games exist. We're going to find you a free slot!\r\n");
+			socket.write('{"type":"message","message":"We plaatsen je bij een bestaand spel."}\r\n');
 			if(this.openGames[0].addPlayer(_new_player)){
 				/*
 				 * This game session starts now. We add the game to the
@@ -193,8 +193,7 @@ var GameManager = {
 			
 			var index = self.openGames[0].players.indexOf(target);
 			self.openGames[0].players.splice(index,1);
-			self.openGames[0].tellPlayers("One player left. Now we have to wait for " + ( this.room_size - this.players.length ) + " more players...\r\n");
-			
+			self.openGames[0].tellPlayers('{"type":"message","message":"Er is een speler weggegaan. We wachten nu op ' + ( this.room_size - this.players.length ) + ' spelers."}\r\n');
 		}
 	}
 }
@@ -203,7 +202,7 @@ var GameManager = {
 
 // The callback function is executed whenever someone connects.
 var server = net.createServer(function (socket) {
-  socket.write("Welcome player!\r\n");
+  socket.write('{"type":"message","message":"Welkom speler!"}\r\n');
   socket.setEncoding('ascii'); // Old, but the fastest.
   socket.on("close", function(){
   	GameManager.discartPlayer(socket);
