@@ -41,13 +41,23 @@ Game.prototype.init = function(player,room_size){
 	
 	this.addPlayer(player);
 	this.positions = Object();
-	setInterval(function(){self.sendPositions();},33);
+	setInterval(function(){self.sendPositions();},66);
 };
 
 Game.prototype.sendPositions = function(){
+	if(!self){ var self = this; }
 	if(this.running){
-		console.log(JSON.stringify(this.positions));
-		this.tellPlayers(this.positions);
+		var players = "";
+		for (var key in this.positions){
+			players += '{"player":"' + key + '",';
+			players += '"x":"' + self.positions[key].x + '",';
+			players += '"y":"' + self.positions[key].y + '",';
+			players += '"angle":"' + self.positions[key].angle + '",';
+			players += '"state":"' + self.positions[key].state + '"},';
+		}
+		players = players.replace(/(^\s*,)|(,\s*$)/g, '');
+		console.log('{"type":"positions","positions":[' + players + ']}');
+		this.tellPlayers('{"type":"positions","positions":[' + players + ']}' + "\r\n");
 	}
 }
 
@@ -78,33 +88,32 @@ Game.prototype.tellPlayersAboutGameIndex = function(index){
 }
 
 Game.prototype.handleMessage = function(message,from){
-	//console.log("Incomming message.");
 	messages = message.split("\n");
 	last = messages.length;
 	message = messages[last - 2];
-	var message_object = JSON.parse(message);
-	switch(message_object.type){
-		case "position_update": // {"type":"position_update","position":{"x":100,"y":100,"angle":180}}
-			this.handlePositionUpdates(message_object.position,from);
-			break;
-		case "player_got_obj":
-			this.tellPlayers(message_object,from);
-			break;
-		case "player_dropped_obj":
-			this.tellPlayers(message_object,from);
-			break;
-		default:
-			console.log("Unknown type!");
-			break;
+	try {
+		var message_object = JSON.parse(message);
+		switch(message_object.type){
+			case "position_update": // {"type":"position_update","position":{"x":100,"y":100,"angle":180}}
+				this.handlePositionUpdates(message_object.position,from);
+				break;
+			case "player_got_obj":
+				this.tellPlayers(message_object,from);
+				break;
+			case "player_dropped_obj":
+				this.tellPlayers(message_object,from);
+				break;
+			default:
+				console.log("Unknown type!");
+				break;
+		}
+	} finally {
+		console.log("Coulnd't send that message.");
 	}
 }
 
 Game.prototype.handlePositionUpdates = function(position,from){
-	if(this.positions[from]) {
-		this.positions[from] = position;
-	} else {
-		this.positions[from] = position;
-	}
+	this.positions[from] = position;
 }
 
 Game.prototype.addPlayer = function(player){
@@ -135,6 +144,7 @@ var GameManager = {
 	defaultGameTime: 120,
 	runningGames: [],
 	openGames:[],
+	
 	players: [],
 	fastPlayerIndex: [], // player.id => game.id
 	
