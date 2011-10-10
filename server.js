@@ -88,11 +88,15 @@ Game.prototype.tellPlayersAboutGameIndex = function(index){
 }
 
 Game.prototype.handleMessage = function(message,from){
+	
 	messages = message.split("\n");
 	last = messages.length;
 	message = messages[last - 2];
-	try {
+	
+	if(message != undefined){
+	
 		var message_object = JSON.parse(message);
+
 		switch(message_object.type){
 			case "position_update": // {"type":"position_update","position":{"x":100,"y":100,"angle":180}}
 				this.handlePositionUpdates(message_object.position,from);
@@ -107,8 +111,6 @@ Game.prototype.handleMessage = function(message,from){
 				console.log("Unknown type!");
 				break;
 		}
-	} finally {
-		console.log("Coulnd't send that message.");
 	}
 }
 
@@ -129,7 +131,6 @@ Game.prototype.addPlayer = function(player){
 	} else {
 		//this.tellPlayers("Ready to start the game!\r\n");
 		this.tellPlayers('{"type":"directive","directive":"start"}\r\n'); // Fires START on clients. 
-		this.tellPlayers("\r\n");
 		return true;
 	}
 };
@@ -204,6 +205,11 @@ var GameManager = {
 			self.runningGames[this.fastPlayerIndex[target.id]].players.splice(index,1);
 			self.runningGames[this.fastPlayerIndex[target.id]].tellPlayers("A player left.");
 			
+			// Discard the game itself when all players leave.
+			if( self.runningGames[this.fastPlayerIndex[target.id]].players.length < 1){
+				var game_index = self.runningGames.indexOf(self.runningGames[this.fastPlayerIndex[target.id]]);
+				self.runningGames.splice(game_index);
+			}
 		} else {
 			
 			var index = self.openGames[0].players.indexOf(target);
