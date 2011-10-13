@@ -101,6 +101,12 @@ Game.prototype.handleMessage = function(message,from){
 			case "position_update": // {"type":"position_update","position":{"x":100,"y":100,"angle":180}}
 				this.handlePositionUpdates(message_object.position,from);
 				break;
+			case "player_dropped_win_obj":
+        this.handlePositionUpdates(message_object,from);
+        break;
+      case "player_dropped_win_obj":
+        this.handlePositionUpdates(player_got_win_obj,from);
+        break;
 			case "player_got_obj":
 				this.tellPlayers(message_object,from);
 				break;
