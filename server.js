@@ -105,10 +105,10 @@ Game.prototype.handleMessage = function(message,from){
         this.handlePositionUpdates(message_object,from);
         break;
       case "player_dropped_win_obj":
-        this.handlePositionUpdates(player_got_win_obj,from);
+        this.handlePositionUpdates(message_object,from);
         break;
       case "you_lose":
-        this.handlePositionUpdates(player_got_win_obj,from);
+        this.handlePositionUpdates(message_object,from);
         break;
 			case "player_got_obj":
 				this.tellPlayers(message_object,from);
